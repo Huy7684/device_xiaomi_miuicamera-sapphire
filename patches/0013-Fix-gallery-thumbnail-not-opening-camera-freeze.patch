@@ -13,37 +13,44 @@ built in the thumbnail-tap handler (GalleryHelper.gotoGallery, called
 from the thumbnail click path) to use the action
 "android.provider.action.REVIEW" with no package/category set. Our
 MIUIGalleryGlobal.apk (com.miui.gallery, the HyperOS Gallery port used
-on this device) does not declare any <intent-filter> for that action
--- it only handles "com.miui.camera.action.REVIEW",
-"com.miui.camera.action.REVIEWX" and "com.android.camera.action.REVIEW"
-(see TranslucentExternalPhotoPageActivity / ExternalPhotoPageActivity
-in its manifest). So startActivity() throws
-ActivityNotFoundException.
+on this device) does not declare any <intent-filter> for that action.
+So startActivity() throws ActivityNotFoundException.
 
 That exception IS caught, but the fallback handler
 (GalleryHelper.s(), "review activity not found!") retries with an
 explicit setPackage("com.miui.mediaviewer") -- a separate MIUI system
-component that is not part of this device's proprietary blobs / is not
-installed on this ROM -- so the fallback ALSO throws
-ActivityNotFoundException, which is silently swallowed and logged as
-"review image fail.".
+component not part of this device's proprietary blobs -- so the
+fallback ALSO throws ActivityNotFoundException, silently swallowed.
+Since gotoGallery() already calls Camera.Co()/pauses the preview
+before either startActivity() attempt, both failures being swallowed
+is what makes the camera appear stuck/frozen instead of opening the
+gallery or erroring visibly.
 
-Before either startActivity() attempt, gotoGallery() already calls
-Camera.Co()/pauses the preview to prepare for the transition to the
-gallery. Since both startActivity() calls fail and the exception is
-swallowed, that preview-pause state is never undone, which is why the
-camera appears to hang/freeze after tapping the thumbnail instead of
-either opening the gallery or showing an error.
+Fix: point the thumbnail-review intent at
+"com.android.camera.action.REVIEW", which MIUIGalleryGlobal does
+declare (see ExternalPhotoPageActivity in its manifest, alongside
+android.intent.action.VIEW). This was already the action in use
+before patch 0007 changed it, so it is the best-tested option in this
+patch chain.
 
-Fix: point the thumbnail-review intent back at
-"com.miui.camera.action.REVIEW", which our shipped Gallery build
-explicitly declares (routed to the translucent review activity that
-matches the camera's transition/lockscreen theming, consistent with
-patch 0009 "Force enable StartActivityWhenLocked"). This mirrors the
-change into camera version 5.3.001050.2's current (re-obfuscated)
-class names: what shipped as l3.smali/a6.smali in older MiuiCamera
-builds is now r3.smali/o6.smali in the currently vendored APK, so this
-patch targets those files instead of l3.smali/a6.smali directly.
+Note: an earlier version of this fix used
+"com.miui.camera.action.REVIEW" instead, which the Gallery also
+declares -- but that one routes to
+TranslucentExternalPhotoPageActivity, MIUI's "seamless" camera->gallery
+transition activity. That activity reads the "device_orientation"
+extra MiuiCamera sends (see GalleryHelper.i()) to line up its
+transition animation with the sensor orientation at capture time; on
+this Gallery build that produced an extra 180 degree rotation on the
+opened photo/video. ExternalPhotoPageActivity (reached via
+"com.android.camera.action.REVIEW") does not do that
+transition-matching, it just honors the image's EXIF orientation, so
+it does not hit this rotation bug.
+
+This mirrors the change into camera version 5.3.001050.2's current
+(re-obfuscated) class names: what shipped as l3.smali/a6.smali in
+older MiuiCamera builds is now r3.smali/o6.smali in the currently
+vendored APK, so this patch targets those files instead of
+l3.smali/a6.smali directly.
 
 This does not touch patch 0006's "Support third party galleries"
 change (the separate general "open Gallery app" intent, matched via
@@ -64,7 +71,7 @@ index 0000000..0000000 100644
  .field public static final d1:Ljava/lang/String; = "com.miui.securitycenter.action.INVISIBLE_SETTING"
 
 -.field public static final e:Ljava/lang/String; = "android.provider.action.REVIEW"
-+.field public static final e:Ljava/lang/String; = "com.miui.camera.action.REVIEW"
++.field public static final e:Ljava/lang/String; = "com.android.camera.action.REVIEW"
 
  .field public static final e0:I = 0x8c36
 
@@ -77,7 +84,7 @@ index 0000000..0000000 100644
      move-result p0
 
 -    const-string v0, "android.provider.action.REVIEW"
-+    const-string v0, "com.miui.camera.action.REVIEW"
++    const-string v0, "com.android.camera.action.REVIEW"
 
      if-eqz p0, :cond_0
 
@@ -86,7 +93,7 @@ index 0000000..0000000 100644
      const-string p1, "GalleryHelper"
 
 -    const-string v1, "gotoGallery: android.provider.action.REVIEW"
-+    const-string v1, "gotoGallery: com.miui.camera.action.REVIEW"
++    const-string v1, "gotoGallery: com.android.camera.action.REVIEW"
 
      invoke-static {p1, v1, p0}, Lcom/android/camera/log/Log;->d(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V
 
