@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 31 Aug 2026 00:00:00 +0000
+Subject: [PATCH 13/13] Fix gallery not opening from the capture thumbnail
+ (camera freeze)
+
+Bug: tapping the capture thumbnail after taking a photo/video did not
+open the Gallery and left the camera preview stuck/unresponsive.
+
+Root cause: patch 0007 ("Change com.android.camera.action.REVIEW to
+android.provider.action.REVIEW") changed the outgoing "review" intent
+built in the thumbnail-tap handler (GalleryHelper.gotoGallery, called
+from the thumbnail click path) to use the action
+"android.provider.action.REVIEW" with no package/category set. Our
+MIUIGalleryGlobal.apk (com.miui.gallery, the HyperOS Gallery port used
+on this device) does not declare any <intent-filter> for that action
+-- it only handles "com.miui.camera.action.REVIEW",
+"com.miui.camera.action.REVIEWX" and "com.android.camera.action.REVIEW"
+(see TranslucentExternalPhotoPageActivity / ExternalPhotoPageActivity
+in its manifest). So startActivity() throws
+ActivityNotFoundException.
+
+That exception IS caught, but the fallback handler
+(GalleryHelper.s(), "review activity not found!") retries with an
+explicit setPackage("com.miui.mediaviewer") -- a separate MIUI system
+component that is not part of this device's proprietary blobs / is not
+installed on this ROM -- so the fallback ALSO throws
+ActivityNotFoundException, which is silently swallowed and logged as
+"review image fail.".
+
+Before either startActivity() attempt, gotoGallery() already calls
+Camera.Co()/pauses the preview to prepare for the transition to the
+gallery. Since both startActivity() calls fail and the exception is
+swallowed, that preview-pause state is never undone, which is why the
+camera appears to hang/freeze after tapping the thumbnail instead of
+either opening the gallery or showing an error.
+
+Fix: point the thumbnail-review intent back at
+"com.miui.camera.action.REVIEW", which our shipped Gallery build
+explicitly declares (routed to the translucent review activity that
+matches the camera's transition/lockscreen theming, consistent with
+patch 0009 "Force enable StartActivityWhenLocked"). This mirrors the
+change into camera version 5.3.001050.2's current (re-obfuscated)
+class names: what shipped as l3.smali/a6.smali in older MiuiCamera
+builds is now r3.smali/o6.smali in the currently vendored APK, so this
+patch targets those files instead of l3.smali/a6.smali directly.
+
+This does not touch patch 0006's "Support third party galleries"
+change (the separate general "open Gallery app" intent, matched via
+category android.intent.category.APP_GALLERY on the main launcher
+activity), which already resolves correctly and is unaffected by this
+bug.
+---
+ smali/com/android/camera/o6.smali | 2 +-
+ smali/com/android/camera/r3.smali | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/smali/com/android/camera/o6.smali b/smali/com/android/camera/o6.smali
+index 0000000..0000000 100644
+--- a/smali/com/android/camera/o6.smali
++++ b/smali/com/android/camera/o6.smali
+@@ -210,7 +210,7 @@
+
+ .field public static final d1:Ljava/lang/String; = "com.miui.securitycenter.action.INVISIBLE_SETTING"
+
+-.field public static final e:Ljava/lang/String; = "android.provider.action.REVIEW"
++.field public static final e:Ljava/lang/String; = "com.miui.camera.action.REVIEW"
+
+ .field public static final e0:I = 0x8c36
+
+diff --git a/smali/com/android/camera/r3.smali b/smali/com/android/camera/r3.smali
+index 0000000..0000000 100644
+--- a/smali/com/android/camera/r3.smali
++++ b/smali/com/android/camera/r3.smali
+@@ -1107,7 +1107,7 @@
+
+     move-result p0
+
+-    const-string v0, "android.provider.action.REVIEW"
++    const-string v0, "com.miui.camera.action.REVIEW"
+
+     if-eqz p0, :cond_0
+
+@@ -1168,7 +1168,7 @@
+
+     const-string p1, "GalleryHelper"
+
+-    const-string v1, "gotoGallery: android.provider.action.REVIEW"
++    const-string v1, "gotoGallery: com.miui.camera.action.REVIEW"
+
+     invoke-static {p1, v1, p0}, Lcom/android/camera/log/Log;->d(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)V
+
+--
+2.47.2
