@@ -78,6 +78,12 @@ Then inherit it from your target device's `device.mk`:
 $(call inherit-product, device/xiaomi/miuicamera-sapphire/device.mk)
 ```
 
+### 🔑 Signing / multi-ROM use
+
+`MiuiCamera.apk` and `MIUIGalleryGlobal.apk` are imported via `android_app_import` with `certificate: "platform"` (see `vendor_xiaomi_miuicamera-sapphire/Android.bp`). That means **any** ROM building this tree gets both apps stripped of their checked-in signature and re-signed at build time with whatever key it points `PRODUCT_DEFAULT_DEV_CERTIFICATE` at — Lunaris, AOSPA, Statix, or anyone else, each with their own key.
+
+To keep the repo itself ROM-agnostic, the binaries checked in here carry AOSP's well-known **public** default platform dev key (`build/target/product/security/platform.{pk8,x509.pem}`, `CN=Android`) rather than any one ROM's real private key. It's not secret — every unmodified AOSP checkout ships the exact same key pair — and it only matters if you plan to swap the APK onto an already-running system *without* rebuilding: in that case, re-sign it yourself first with your own ROM's platform key (`apksigner sign --key platform.pk8 --cert platform.x509.pem ...` after `zipalign`) so its signature matches what's already installed.
+
 ## Credits
 
 - Original smali patch series by **Arian** (`arian.kulmer@web.de`)
