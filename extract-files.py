@@ -41,6 +41,11 @@ blob_fixups: blob_fixups_user_type = {
         .remove_needed('libhidltransport.so'),
     'system/priv-app/MiuiCamera/MiuiCamera.apk': blob_fixup()
         .apktool_patch('patches'),
+    'vendor/lib64/camera/components/com.jigan.node.realtimebokeh.so': blob_fixup()
+        .sig_replace('B1 02 40 B9 0A 02 11 6B 23 09 00 54',
+                     'B1 02 40 B9 0A 02 11 6B 1F 20 03 D5')
+        .sig_replace('B6 06 40 B9 0C 00 16 6B A3 08 00 54',
+                     'B6 06 40 B9 0C 00 16 6B 1F 20 03 D5'),
 }  # fmt: skip
 
 module = ExtractUtilsModule(
