@@ -7,8 +7,5 @@ persist.vendor.camera.privapp.list=com.android.camera
 # MiuiCamera
 ro.miui.notch=1
 
-# Live Photo support (3 = Dynamic/HyperOS Live Photo)
-ro.product.camera.livephoto.support=3
-
 # Auxiliary camera package list
 vendor.camera.aux.packagelist=com.android.camera
