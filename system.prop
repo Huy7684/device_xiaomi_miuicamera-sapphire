@@ -12,11 +12,3 @@ ro.product.camera.livephoto.support=3
 
 # Auxiliary camera package list
 vendor.camera.aux.packagelist=com.android.camera
-
-# Fix delay / unclickable placeholder photo on AOSP
-# (Bypass offline parallel processing daemon queue so photos save immediately)
-persist.vendor.camera.parallel.enable=0
-vendor.camera.parallel.enable=0
-persist.camera.parallel.enable=0
-ro.vendor.camera.parallel.enable=0
-
