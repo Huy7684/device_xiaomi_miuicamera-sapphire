@@ -1,25 +1,20 @@
-From 7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b Mon Sep 17 00:00:00 2001
+From d0433879080d91787f9322a45b925cb2a3109338 Mon Sep 17 00:00:00 2001
 From: Huy7684 <huyplus7684@gmail.com>
-Date: Sun, 1 Nov 2026 16:20:00 +0700
-Subject: [PATCH] Fix shortcut menu crash, portrait capture hang, and night mode HAL crash
+Date: Sun, 1 Nov 2026 17:03:49 +0700
+Subject: [PATCH] Fix shortcut menu crash, portrait capture hang, and night
+ mode HAL crash
 
-- Fallback to standard ResourcesCompat.getDrawable in se/a when obfuscated
-  assets (e.g. ic_west_coast_princess.webp) cannot be opened from AssetManager,
-  fixing top shortcut menu expand crash.
-- Force shotType to 0 in Portrait ShotTypeHandler (h7/g) to bypass missing dual
-  bokeh/depth streams and save photos immediately without hanging thumbnail.
-- Force shotType to 0 in Night ShotTypeHandler (h7/j) to bypass unsupported
-  vendor SuperNight raw burst capture request causing HAL error 4 crash.
 ---
  smali_classes2/h7/g.smali |  8 ++++++++
  smali_classes2/h7/j.smali |  8 ++++++++
- smali_classes3/se/a.smali | 33 ++++++++++++++++++++++++---------
- 3 files changed, 40 insertions(+), 9 deletions(-)
+ smali_classes3/se/a.smali | 15 ++++++++++-----
+ 3 files changed, 26 insertions(+), 5 deletions(-)
 
-diff -uNr a/smali_classes2/h7/g.smali b/smali_classes2/h7/g.smali
---- a/smali_classes2/h7/g.smali	2026-11-01 16:17:04.615523468 +0700
-+++ b/smali_classes2/h7/g.smali	2026-11-01 16:17:25.919921992 +0700
-@@ -56,6 +56,14 @@
+diff --git a/smali_classes2/h7/g.smali b/smali_classes2/h7/g.smali
+index b0dfa63d..a7705e83 100644
+--- a/smali_classes2/h7/g.smali
++++ b/smali_classes2/h7/g.smali
+@@ -54,6 +54,14 @@
  .method public final c()Ljava/lang/Object;
      .locals 6
  
@@ -34,10 +29,11 @@ diff -uNr a/smali_classes2/h7/g.smali b/smali_classes2/h7/g.smali
      sget-boolean v0, Ltc/b;->i:Z
  
      sget-object v0, Ltc/b$b;->a:Ltc/b;
-diff -uNr a/smali_classes2/h7/j.smali b/smali_classes2/h7/j.smali
---- a/smali_classes2/h7/j.smali	2026-11-01 16:17:04.615523468 +0700
-+++ b/smali_classes2/h7/j.smali	2026-11-01 16:17:30.500000000 +0700
-@@ -56,6 +56,14 @@
+diff --git a/smali_classes2/h7/j.smali b/smali_classes2/h7/j.smali
+index 97391ec0..86803112 100644
+--- a/smali_classes2/h7/j.smali
++++ b/smali_classes2/h7/j.smali
+@@ -54,6 +54,14 @@
  .method public final c()Ljava/lang/Object;
      .locals 5
  
@@ -52,14 +48,15 @@ diff -uNr a/smali_classes2/h7/j.smali b/smali_classes2/h7/j.smali
      sget-boolean v0, Ltc/b;->i:Z
  
      sget-object v0, Ltc/b$b;->a:Ltc/b;
-diff -uNr a/smali_classes3/se/a.smali b/smali_classes3/se/a.smali
---- a/smali_classes3/se/a.smali	2026-11-01 16:17:04.542809611 +0700
-+++ b/smali_classes3/se/a.smali	2026-11-01 16:14:43.996142401 +0700
+diff --git a/smali_classes3/se/a.smali b/smali_classes3/se/a.smali
+index 68f6d7e9..53f2ceab 100644
+--- a/smali_classes3/se/a.smali
++++ b/smali_classes3/se/a.smali
 @@ -166,6 +166,7 @@
  
      invoke-static {p0, v0}, Lkotlin/jvm/internal/j;->f(Ljava/lang/Object;Ljava/lang/String;)V
  
-+    :try_start_c
++    :try_start_0
      invoke-static {p0}, Lpe/a;->a(Landroid/content/res/Resources;)Ljava/util/Set;
  
      move-result-object v0
@@ -80,10 +77,10 @@ diff -uNr a/smali_classes3/se/a.smali b/smali_classes3/se/a.smali
 +    if-eqz v0, :cond_0
  
 +    return-object v0
-+    :try_end_c
-+    .catchall {:try_start_c .. :try_end_c} :catch_c
++    :try_end_0
++    .catchall {:try_start_0 .. :try_end_0} :catchall_0
 +
-+    :catch_c
++    :catchall_0
      :cond_0
      invoke-static {p0, p1, p2}, Landroidx/core/content/res/ResourcesCompat;->getDrawable(Landroid/content/res/Resources;ILandroid/content/res/Resources$Theme;)Landroid/graphics/drawable/Drawable;
  
@@ -93,55 +90,6 @@ diff -uNr a/smali_classes3/se/a.smali b/smali_classes3/se/a.smali
      return-object p0
  .end method
  
-@@ -268,25 +273,28 @@
- 
-     invoke-virtual {p0, p1, p2, v0, v3}, Landroid/content/res/Resources;->getValueForDensity(IILandroid/util/TypedValue;Z)V
- 
--    iget-object p1, v0, Landroid/util/TypedValue;->string:Ljava/lang/CharSequence;
-+    iget-object p2, v0, Landroid/util/TypedValue;->string:Ljava/lang/CharSequence;
- 
--    invoke-virtual {p1}, Ljava/lang/Object;->toString()Ljava/lang/String;
-+    invoke-virtual {p2}, Ljava/lang/Object;->toString()Ljava/lang/String;
- 
--    move-result-object p1
-+    move-result-object p2
- 
--    const-string p2, "obfu_res/"
-+    const-string v4, "obfu_res/"
- 
--    invoke-static {p2, p1}, La0/v;->i(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
-+    invoke-static {v4, p2}, La0/v;->i(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
- 
--    move-result-object p1
-+    move-result-object p2
- 
-     invoke-virtual {p0}, Landroid/content/res/Resources;->getAssets()Landroid/content/res/AssetManager;
- 
--    move-result-object p2
-+    move-result-object v4
- 
--    invoke-virtual {p2, p1}, Landroid/content/res/AssetManager;->open(Ljava/lang/String;)Ljava/io/InputStream;
-+    :try_start_open
-+    invoke-virtual {v4, p2}, Landroid/content/res/AssetManager;->open(Ljava/lang/String;)Ljava/io/InputStream;
- 
-     move-result-object p2
-+    :try_end_open
-+    .catchall {:try_start_open .. :try_end_open} :catch_open
- 
-     :try_start_0
-     const-string v3, "`is`"
-@@ -367,4 +375,11 @@
-     invoke-static {p2, p0}, La0/d1;->c(Ljava/io/Closeable;Ljava/lang/Throwable;)V
- 
-     throw p1
-+
-+    :catch_open
-+    invoke-static {p0, p1, v1}, Landroidx/core/content/res/ResourcesCompat;->getDrawable(Landroid/content/res/Resources;ILandroid/content/res/Resources$Theme;)Landroid/graphics/drawable/Drawable;
-+
-+    move-result-object p0
-+
-+    return-object p0
- .end method
 -- 
 2.43.0
 
