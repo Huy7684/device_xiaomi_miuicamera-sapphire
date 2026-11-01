@@ -1,0 +1,50 @@
+From a1b2c3d4e5f60718293a4b5c6d7e8f9012345678 Mon Sep 17 00:00:00 2001
+From: Huy7684 <huyplus7684@gmail.com>
+Date: Sun, 1 Nov 2026 11:58:00 +0700
+Subject: [PATCH] Disable parallel processing and preview thumbnail for instant capture
+
+---
+ smali_classes2/com/android/camera/module/Camera2Module.smali | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/smali_classes2/com/android/camera/module/Camera2Module.smali b/smali_classes2/com/android/camera/module/Camera2Module.smali
+--- a/smali_classes2/com/android/camera/module/Camera2Module.smali
++++ b/smali_classes2/com/android/camera/module/Camera2Module.smali
+@@ -5055,6 +5055,8 @@
+ .method private isParallel()Z
+     .locals 4
+ 
++    const/4 v0, 0x0
++    return v0
+     new-instance v0, Ljava/lang/StringBuilder;
+ 
+     const-string v1, "is Parallel path, shot2Galley: "
+@@ -20524,6 +20526,8 @@
+ .method public enablePreviewAsThumbnail()Z
+     .locals 5
+ 
++    const/4 v0, 0x0
++    return v0
+     iget-object v0, p0, Lcom/android/camera/module/BaseModule;->mModuleStateMgr:Lu6/f;
+ 
+     invoke-interface {v0}, Lu6/f;->G0()Z
+@@ -25426,6 +25430,8 @@
+ .method public isParallelSessionEnable()Z
+     .locals 4
+ 
++    const/4 v0, 0x0
++    return v0
+     invoke-static {}, Ly2/b;->e()Z
+ 
+     move-result v0
+@@ -26048,6 +26054,8 @@
+ .method public isShot2GalleryOrEnableParallel()Z
+     .locals 1
+ 
++    const/4 v0, 0x0
++    return v0
+     iget-boolean v0, p0, Lcom/android/camera/module/Camera2Module;->mEnableShot2Gallery:Z
+ 
+     if-nez v0, :cond_1
+-- 
+2.43.0
