@@ -34,31 +34,18 @@ lib_fixups: lib_fixups_user_type = {
     'vendor.xiaomi.hardware.campostproc@1.0': lib_fixup_system_suffix,
 }
 
-def patch_camera_icon(ctx, file, file_path, *args, **kwargs):
+def patch_camera_icon(ctx, file, file_path, *args, tmp_dir=None, **kwargs):
+    if not tmp_dir:
+        return
     icon_base = os.path.join(ctx.module_dir, 'icon')
     if not os.path.isdir(icon_base):
         return
-
-    replacements = {
-        'res/O9k.png': open(os.path.join(icon_base, 'mipmap-xhdpi/f9l.png'), 'rb').read(),
-        'res/fB5.png': open(os.path.join(icon_base, 'mipmap-xxhdpi/f9l.png'), 'rb').read(),
-        'res/HAL.png': open(os.path.join(icon_base, 'mipmap-xxxhdpi/f9l.png'), 'rb').read(),
-    }
-
-    import tempfile
-    import zipfile
-
-    tmp_fd, tmp_path = tempfile.mkstemp()
-    os.close(tmp_fd)
-
-    with zipfile.ZipFile(file_path, 'r') as zin, zipfile.ZipFile(tmp_path, 'w', compression=zipfile.ZIP_DEFLATED) as zout:
-        for item in zin.infolist():
-            if item.filename in replacements:
-                zout.writestr(item.filename, replacements[item.filename], compress_type=zipfile.ZIP_DEFLATED)
-            else:
-                zout.writestr(item, zin.read(item.filename))
-
-    shutil.move(tmp_path, file_path)
+    for root, _, files in os.walk(icon_base):
+        for f in files:
+            rel = os.path.relpath(os.path.join(root, f), icon_base)
+            target = os.path.join(tmp_dir, 'res', rel)
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            shutil.copy2(os.path.join(root, f), target)
 
 
 blob_fixups: blob_fixups_user_type = {
@@ -70,8 +57,10 @@ blob_fixups: blob_fixups_user_type = {
     'system/lib64/libmicampostproc_client.so': blob_fixup()
         .remove_needed('libhidltransport.so'),
     'system/priv-app/MiuiCamera/MiuiCamera.apk': blob_fixup()
-        .apktool_patch('patches')
+        .apktool_unpack('patches')
+        .patch_dir('patches')
         .call(patch_camera_icon)
+        .apktool_pack()
         .stripzip(),
     'vendor/lib64/camera/components/com.jigan.node.realtimebokeh.so': blob_fixup()
         .sig_replace('B1 02 40 B9 0A 02 11 6B 23 09 00 54',
