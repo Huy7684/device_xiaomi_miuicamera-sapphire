@@ -18,7 +18,7 @@ index b0dfa63d..a7705e83 100644
  .method public final c()Ljava/lang/Object;
      .locals 6
  
-+    const/4 v0, 0x1
++    const/4 v0, 0x0
 +
 +    invoke-static {v0}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;
 +
@@ -37,7 +37,7 @@ index 97391ec0..86803112 100644
  .method public final c()Ljava/lang/Object;
      .locals 5
  
-+    const/4 v0, 0x1
++    const/4 v0, 0x0
 +
 +    invoke-static {v0}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;
 +
